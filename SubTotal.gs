@@ -1,36 +1,49 @@
-function myFunction() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Template");
-  var gcRange = sheet.getRange("D2:D10");
-  var gcValues = gcRange.getValues();
-  
-  //Get all categories
-  var categories =[]
-  outerloop: for (var i = 0; i < gcValues.length; i++) {
-    for (var j = 0; j < gcValues[i].length; j++) {
-      var cellValue = gcValues[i][j];
+function SubTotal() {
+  //read json string from config.html, then parse it
+  const jsonString = HtmlService.createHtmlOutputFromFile("config.html").getContent();
+  const config = JSON.parse(jsonString);
+  //open spreadsheet
+  let spreadsheet = SpreadsheetApp.openById(config.ID);
+  let pages = spreadsheet.getSheets();
+  let categories = [];
+  let sheetCategories = []
+  sheetloop: for (x =0; x<pages.length; x++  ){
+    Logger.log("Parsing page: "+pages[x].getName());
+
+
+    //get all categories and store them in categories array
+    let categoryRange = pages[x].getRange("D2:D100"); // TODO dynamic range
+    let categoryValues = categoryRange.getValues();
+    columnloop: for (i = 0; i<categoryValues.length; i++){
+      if (pages[x].getName() == "Summary"){
+        //skip summary page
+        continue sheetloop;
+      }
+      let cellValue = categoryValues[i][0];
+      //Logger.log("Cell value of D"+i+": "+cellValue);
       if (cellValue == ""){
-        //Logger.log("Im out");
-        break outerloop;
+        break columnloop;
+      } else if (!categories.includes(cellValue)){
+      categories.push(cellValue);
       }
-      if (!categories.includes(cellValue)){
-        categories.push(cellValue);
-      }
-      //Logger.log("Cell (" + (i+1) + "," + (j+1) + "): " + cellValue);
-      
+      if ((!sheetCategories.includes(cellValue)) || (sheetCategories==[])){
+        sheetCategories.push(cellValue);
+      } 
     }
+    Logger.log("sheet categroies: "+sheetCategories);
+    //clear column F before writing subtotals
+    pages[x].getRange(1,6,pages[x].getLastRow(),1).clearContent();
+    //print subtotals
+    let k=0;
+    Logger.log("printing sub totals");
+    pages[x].getRange("F1:F30").getCell(1,1).setValue("Sub Totals");
+    for (let j=1; j<sheetCategories.length*2; j+=2){
+      pages[x].getRange("F1:F30").getCell(j+1,1).setValue(sheetCategories[k]);
+      pages[x].getRange("F1:F30").getCell(j+2,1).setValue("=SUMIF(D:D,"+"\""+sheetCategories[k]+"\""+",C:C)");
+      k++;
+    }
+    k=null;
+    sheetCategories=[];
   }
-  Logger.log(categories);
-
-  var wRange = sheet.getRange("F1:F20"); //+categories.length*2+1
-  sheet.getRange("F1").getCell(1,1).setValue("Sub Total");
-  
-  var i=0;
-  for (var j=1; j<categories.length*2; j+=2){
-    //Logger.log(categories[j]);
-    sheet.getRange("F1:F30").getCell(j+1,1).setValue(categories[i]);
-    sheet.getRange("F1:F30").getCell(j+2,1).setValue("=SUMIF(D:D,"+"\""+categories[i]+"\""+",C:C)");
-    i++;
-
-  }
-  i=null;
+  Logger.log("Categories across all pages: " +categories);
 }
