@@ -1,4 +1,4 @@
-function msSubTotal() {
+function SubTotal() {
   //read json string from config.html, then parse it
   const jsonString = HtmlService.createHtmlOutputFromFile("config.html").getContent();
   const config = JSON.parse(jsonString);
