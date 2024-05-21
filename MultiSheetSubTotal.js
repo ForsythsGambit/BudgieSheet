@@ -10,20 +10,20 @@ function msSubTotal() {
 	let sheetCategories = []
 
 	//loop over spreadsheets
-	sheetloop: for (x =0; x<pages.length; x++  )
+	sheetloop: for (x =0; x<pages.length; x++)
 	{
 		Logger.log("Parsing page: "+pages[x].getName());
 
 		//get all categories and store them in categories array
-		let categoryRange = pages[x].getRange("D2:D100"); // TODO dynamic range
+		let categoryRange = pages[x].getRange(interpolate("%s2:%s100", [config.CategoryColumn,config.CategoryColumn])); // TODO dynamic range
+		//config.CategoryColumn+"2:"+config.CategoryColumn+"100"
 		let categoryValues = categoryRange.getValues();
 
 		columnloop: for (i = 0; i<categoryValues.length; i++)
 		{
 			if (pages[x].getName() == "Summary")
 			{
-				//skip summary page
-				continue sheetloop;
+				continue sheetloop; //skip summary page
 			}
 			
 			let cellValue = categoryValues[i][0];
@@ -44,16 +44,23 @@ function msSubTotal() {
 		}
 		Logger.log("sheet categroies: "+sheetCategories);
 
+
+		let subtotalRange = interpolate("%s1:%s30", [config.SubtotalColumn, config.SubtotalColumn]);
 		//clear column F before writing subtotals
 		pages[x].getRange(1,6,pages[x].getLastRow(),1).clearContent();
 		//print subtotals
 		let k=0;
 		Logger.log("printing sub totals");
-		pages[x].getRange("F1:F30").getCell(1,1).setValue("Sub Totals");
+		pages[x].getRange(subtotalRange).getCell(1,1).setValue("Sub Totals");
 		for (let j=1; j<sheetCategories.length*2; j+=2)
 		{
-			pages[x].getRange("F1:F30").getCell(j+1,1).setValue(sheetCategories[k]);
-			pages[x].getRange("F1:F30").getCell(j+2,1).setValue("=SUMIF(D:D,"+"\""+sheetCategories[k]+"\""+",C:C)");
+			pages[x].getRange(subtotalRange).getCell(j+1,1).setValue(sheetCategories[k]);
+			//"=SUMIF(D:D,"+"\""+sheetCategories[k]+"\""+",C:C)"
+			let formula = interpolate("=SUMIF(%s:%s,\"%s\",%s:%s)", [config.CategoryColumn, config.CategoryColumn,sheetCategories[k],config.AmountColumn,config.AmountColumn]);
+			pages[x].getRange(subtotalRange).getCell(j+2,1).setValue(formula);
+			formula = interpolate("=SUMIF(%s:%s,\"%s\", %s:%s", [config.CategoryColumn, config.CategoryColumn, sheetCategories[k], config.AmountColumn, config.AmountColumn]);
+			pages[x].getRange(subtotalRange).getCell(j+2,1).setValue(formula);
+			//"=SUMIF(D:D,"+"\""+sheetCategories[k]+"\""+",C:C)");
 			k++;
 		}
 		k=null;
