@@ -10,18 +10,18 @@ function msSubTotal() {
 	let sheetCategories = []
 
 	//loop over spreadsheets
-	sheetloop: for (x =0; x<pages.length; x++)
+	sheetloop: for (const page of pages)
 	{
-		Logger.log("Parsing page: "+pages[x].getName());
+		Logger.log(interpolate("Parsing page: %s", [page.getName()]));
 
 		//get all categories and store them in categories array
-		let categoryRange = pages[x].getRange(interpolate("%s2:%s100", [config.CategoryColumn,config.CategoryColumn])); // TODO dynamic range
+		let categoryRange = page.getRange(interpolate("%s2:%s100", [config.CategoryColumn,config.CategoryColumn])); // TODO dynamic range
 		//config.CategoryColumn+"2:"+config.CategoryColumn+"100"
 		let categoryValues = categoryRange.getValues();
 
 		columnloop: for (i = 0; i<categoryValues.length; i++)
 		{
-			if (pages[x].getName() == "Summary")
+			if (page.getName() == "Summary")
 			{
 				continue sheetloop; //skip summary page
 			}
@@ -45,26 +45,25 @@ function msSubTotal() {
 		Logger.log("sheet categroies: "+sheetCategories);
 
 
-		let subtotalRange = interpolate("%s1:%s30", [config.SubtotalColumn, config.SubtotalColumn]);
+		let subtotalRangeText = interpolate("%s1:%s30", [config.SubtotalColumn, config.SubtotalColumn]);
+		let categoryRangeText = interpolate("%s:%s", [config.CategoryColumn, config.CategoryColumn]);
+		let discretionaryRangeText = interpolate("%s:%s", [config.DiscretionaryColumn, config.DiscretionaryColumn]);
+		let AmountRangeText = interpolate("%s:%s", [config.AmountColumn, config.AmountColumn]);
 		//clear column F before writing subtotals
-		pages[x].getRange(1,6,pages[x].getLastRow(),1).clearContent();
+		page.getRange(1,6,page.getLastRow(),1).clearContent();
 		//print subtotals
 		let k=0;
 		Logger.log("printing sub totals");
-		pages[x].getRange(subtotalRange).getCell(1,1).setValue("Sub Totals");
+		page.getRange(subtotalRangeText).getCell(1,1).setValue("Sub Totals");
 		for (let j=1; j<sheetCategories.length*2; j+=2)
 		{
-			pages[x].getRange(subtotalRange).getCell(j+1,1).setValue(sheetCategories[k]);
-			//"=SUMIF(D:D,"+"\""+sheetCategories[k]+"\""+",C:C)"
-			let formula = interpolate("=SUMIF(%s:%s,\"%s\",%s:%s)", [config.CategoryColumn, config.CategoryColumn,sheetCategories[k],config.AmountColumn,config.AmountColumn]);
-			pages[x].getRange(subtotalRange).getCell(j+2,1).setValue(formula);
-			formula = interpolate("=SUMIF(%s:%s,\"%s\", %s:%s", [config.CategoryColumn, config.CategoryColumn, sheetCategories[k], config.AmountColumn, config.AmountColumn]);
-			pages[x].getRange(subtotalRange).getCell(j+2,1).setValue(formula);
-			//"=SUMIF(D:D,"+"\""+sheetCategories[k]+"\""+",C:C)");
+			page.getRange(subtotalRangeText).getCell(j+1,1).setValue(sheetCategories[k]);
+			let formula = interpolate("=SUMIFS(%s, %s, \"%s\", %s, \"<>no\")", [AmountRangeText, categoryRangeText, sheetCategories[k], discretionaryRangeText]);
+			page.getRange(subtotalRangeText).getCell(j+2,1).setValue(formula);
 			k++;
 		}
 		k=null;
 		sheetCategories=[];
 	}
-	Logger.log("Categories across all pages: " +categories);
+	Logger.log("Categories across all pages: " + categories);
 }

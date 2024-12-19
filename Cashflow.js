@@ -9,16 +9,25 @@ function CashFlow()
 	let totals = []; //nested array in format[[datestamp,inflows,outflows,NCF]]
 
 	//iterate over pages and add totals to the array
-	sheetloop: for (x =0; x<pages.length; x++  )
+	sheetloop: for (const page of pages)
 	{
 		//Logger.log(pages[x].getName());
 		//get ranges and values per column, set at fixed length of 100.
-		let totalsRange = pages[x].getRange("G1:H2");
+		let totalsRange = page.getRange(interpolate("%s2:%s2", [config.TotalOutflowColumn, config.TotalInflowColumn])); 
 		let totalsValues = totalsRange.getValues();
+		
+		Logger.log(interpolate("%s: Outflows %s, Inflows %s",[page.getName(), totalsValues[0][0], totalsValues[0][1]]));
+		//Logger.log(totalsValues);
+		
 		//filter to ensure only the monthly pages are added -- TEMP
-		if ((totalsValues[1][0] != "") && (totalsValues[1][1] != "") && (pages[x].getName() != "Template"))
+		if ((page.getName() != "Template") && (page.getName() != "Summary") && (totalsValues[0][0] != null) && (totalsValues[0][1] != null))
 		{
-			totals.push([pages[x].getName(),totalsValues[1][1],totalsValues[1][0],totalsValues[1][0]+totalsValues[1][1]]);
+			totals.push([
+				page.getName(),
+				totalsValues[0][1],
+				totalsValues[0][0],
+				totalsValues[0][0]+totalsValues[0][1]
+			]);
 		}
 	}
 	Logger.log(totals);
@@ -29,10 +38,9 @@ function CashFlow()
 	tableRange.setValues(totals);
 
 	//clear old chart(s)
-	let charts = summary.getCharts();
-	for (x=0; x<charts.length;x++)
+	for (const chart of summary.getCharts())
 	{
-		summary.removeChart(charts[x]);
+		summary.removeChart(chart);
 	}
 
 	//create chart from summary sheet
